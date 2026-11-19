@@ -15,8 +15,8 @@ from openai import OpenAI
 
 # Bekannte Anbieter: Name -> (Adresse, Standard-Modell, Name der Key-Variable in .env)
 ANBIETER = {
-    "github": ("https://models.github.ai/inference", "openai/gpt-4.1-mini", "GITHUB_TOKEN"),
-    "nvidia": ("https://integrate.api.nvidia.com/v1", "meta/llama-3.3-70b-instruct", "NVIDIA_API_KEY"),
+    "nvidia": ("https://integrate.api.nvidia.com/v1", "nvidia/nemotron-3.5-lightning-30b-a3b", "NVIDIA_API_KEY"),
+    "groq": ("https://api.groq.com/openai/v1", "openai/gpt-oss-120b", "GROQ_API_KEY"),
     "custom": (None, None, "AI_API_KEY"),  # alles selbst in .env eintragen (z. B. Ollama, OpenAI)
 }
 
@@ -35,7 +35,7 @@ def einstellungen_lesen() -> dict:
         )
     load_dotenv(".env", override=True)
 
-    anbieter = os.getenv("AI_PROVIDER", "github").strip().lower()
+    anbieter = os.getenv("AI_PROVIDER", "nvidia").strip().lower()
     if anbieter not in ANBIETER:
         raise ProviderFehler(
             f"Unbekannter AI_PROVIDER '{anbieter}' in .env. Erlaubt sind: {', '.join(ANBIETER)}"

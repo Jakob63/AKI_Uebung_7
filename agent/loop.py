@@ -155,7 +155,7 @@ def llm_fragen(client, anfrage: dict, nachrichten: list[dict]):
         raise AgentFehler("Der API-Key wurde abgelehnt. Prüfe den Schlüssel in der Datei .env.") from e
     except openai.PermissionDeniedError as e:
         raise AgentFehler(
-            "Zugriff verweigert. Bei GitHub Models braucht dein Token die Berechtigung 'Models' (read)."
+            "Zugriff verweigert. Prüfe den API-Key in .env – ist er vollständig kopiert und noch gültig?"
         ) from e
     except openai.NotFoundError as e:
         raise AgentFehler(
@@ -176,6 +176,14 @@ def llm_fragen(client, anfrage: dict, nachrichten: list[dict]):
             f"Das LLM hat die Anfrage abgelehnt: {e.message}\n"
             f"(Details stehen in agent.log. Rollenfolge: {rollen})"
         ) from e
+    except openai.APIStatusError as e:
+        if e.status_code == 410:
+            raise AgentFehler(
+                f"Das Modell '{anfrage['model']}' wurde vom Anbieter abgeschaltet. "
+                f"Trage in .env bei AI_MODEL= ein anderes Modell ein (siehe README, 'Andere Sprachmodelle')."
+            ) from e
+        logger.exception("Unerwarteter API-Fehler")
+        raise AgentFehler(f"Fehler vom LLM-Anbieter: {e}") from e
     except openai.APIError as e:
         logger.exception("Unerwarteter API-Fehler")
         raise AgentFehler(f"Fehler vom LLM-Anbieter: {e}") from e

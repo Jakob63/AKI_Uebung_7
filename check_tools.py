@@ -4,6 +4,7 @@ Prüft deine Tools und Agents – OHNE das Sprachmodell zu fragen (braucht also 
 Starten:
     python check_tools.py           -> alle Tools prüfen und ihre Beschreibung fürs LLM anzeigen
     python check_tools.py wetter    -> nur ein bestimmtes Tool anzeigen
+    python check_tools.py --llm     -> zusätzlich die Verbindung zum Sprachmodell testen (braucht API-Key)
 
 Zeigt für jedes Tool das automatisch erzeugte JSON-Schema – also genau das, was das LLM
 über dein Tool erfährt. Und es warnt vor typischen Fehlern.
@@ -65,8 +66,42 @@ def tool_pruefen(name: str, info: dict) -> list[str]:
     return warnungen
 
 
+def verbindung_testen():
+    """Schickt eine echte Testfrage ans Sprachmodell und prüft, ob es ein Tool benutzt."""
+    import time
+
+    from agent.loop import AgentFehler, antworten
+    from agent.provider import ProviderFehler
+
+    test_agent = {
+        "name": "Test",
+        "system_prompt": "Du bist ein Test-Assistent. Benutze für Fragen nach der Uhrzeit immer "
+                         "das Tool 'uhrzeit'. Antworte kurz auf Deutsch.",
+        "tools": ["uhrzeit"] if "uhrzeit" in ALLE_TOOLS else [],
+    }
+    benutzt = []
+    print("⏳ Frage das Sprachmodell: \"Wie spät ist es gerade?\" …")
+    start = time.time()
+    try:
+        antwort = antworten(test_agent, [{"role": "user", "content": "Wie spät ist es gerade?"}],
+                            on_tool_call=lambda name, argumente, ergebnis: benutzt.append(name))
+    except (AgentFehler, ProviderFehler) as fehler:
+        print(f"❌ {fehler}")
+        return 1
+    dauer = time.time() - start
+    print(f"   Antwort ({dauer:.1f} s): {' '.join(antwort.split())[:200]}")
+    if benutzt:
+        print(f"✅ Das Sprachmodell hat das Tool benutzt ({', '.join(benutzt)}). Alles startklar!")
+        return 0
+    print("⚠️  Das Sprachmodell hat geantwortet, aber KEIN Tool benutzt. Vielleicht kann dieses Modell "
+          "nicht gut mit Tools umgehen – probier ein anderes Modell (AI_MODEL in .env).")
+    return 1
+
+
 def main():
-    nur = sys.argv[1] if len(sys.argv) > 1 else None
+    argumente = [a for a in sys.argv[1:] if not a.startswith("--")]
+    llm_testen = "--llm" in sys.argv
+    nur = argumente[0] if argumente else None
     tools_laden()
     probleme = 0
 
@@ -123,9 +158,13 @@ def main():
         from agent.provider import ProviderFehler, einstellungen_lesen
         try:
             e = einstellungen_lesen()
-            print(f"✅ .env gefunden: Anbieter={e['anbieter']}, Modell={e['modell']} "
-                  f"(ob der Key wirklich funktioniert, merkst du erst beim Chatten)")
+            print(f"✅ .env gefunden: Anbieter={e['anbieter']}, Modell={e['modell']}")
+            if llm_testen:
+                probleme += verbindung_testen()
+            else:
+                print("   Ob der Schlüssel funktioniert, testest du mit:  python check_tools.py --llm")
         except ProviderFehler as fehler:
+            probleme += 1
             print(f"⚠️  {fehler}")
 
     print()

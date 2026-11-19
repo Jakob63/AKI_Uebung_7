@@ -114,24 +114,23 @@ Wenn vorne im Terminal jetzt `(.venv)` steht, hat es geklappt. Die Installation 
 ### Schritt 3: Einen kostenlosen Schlüssel (API-Key) besorgen
 
 Das Sprachmodell läuft nicht auf deinem Rechner, sondern bei einem Anbieter im Internet.
-Dafür brauchst du einen Schlüssel. Wir nehmen **GitHub Models** – kostenlos mit einem GitHub-Account.
+Dafür brauchst du einen Schlüssel. Wir nehmen **NVIDIA** – kostenlos mit einem NVIDIA-Account.
 
-1. Falls noch nicht vorhanden: Account auf [github.com](https://github.com) anlegen.
-2. Öffne [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
-3. **Token name:** z. B. `agent-vorlage`, **Expiration:** z. B. 90 Tage.
-4. Runterscrollen zu **Permissions** → **Account permissions** (bzw. „Add permissions“) → **Models** → auf **Read-only** stellen.
-5. Ganz unten **Generate token** klicken und den Token (fängt mit `github_pat_` an) **kopieren**.
-   Du siehst ihn nur einmal!
+1. Öffne [build.nvidia.com](https://build.nvidia.com) und klicke oben rechts auf **Login**.
+   Falls du noch keinen Account hast: kostenlos registrieren (E-Mail genügt).
+2. Nach dem Anmelden: Klicke auf **Get API Key** (oben rechts oder auf der Seite eines Modells)
+   und dann auf **Generate Key**.
+3. Den Schlüssel (fängt mit `nvapi-` an) **kopieren**. Du siehst ihn nur einmal!
 
 ### Schritt 4: Den Schlüssel eintragen
 
 1. Kopiere die Datei `.env.example` im Projektordner und nenne die Kopie **`.env`**
    (genau so: Punkt am Anfang, keine Endung).
    Im Terminal geht das so: Windows `copy .env.example .env` · Mac `cp .env.example .env`
-2. Öffne `.env` mit einem Texteditor (VS Code, Notepad …) und ersetze `hier_deinen_token_einfuegen`
-   durch deinen Token:
+2. Öffne `.env` mit einem Texteditor (VS Code, Notepad …) und ersetze `hier_deinen_key_einfuegen`
+   durch deinen Schlüssel:
    ```
-   GITHUB_TOKEN=github_pat_11ABC...
+   NVIDIA_API_KEY=nvapi-AbC123...
    ```
 3. Speichern.
 
@@ -143,8 +142,15 @@ Dafür brauchst du einen Schlüssel. Wir nehmen **GitHub Models** – kostenlos 
 python check_tools.py
 ```
 
-Das zeigt alle Tools, alle Agents und ob dein Schlüssel eingetragen ist. Wenn unten
-„✅ .env gefunden“ steht, bist du startklar! 🎉
+Das zeigt alle Tools, alle Agents und ob dein Schlüssel eingetragen ist.
+
+Jetzt noch testen, ob die Verbindung zum Sprachmodell klappt:
+
+```
+python check_tools.py --llm
+```
+
+Steht unten „✅ Das Sprachmodell hat das Tool benutzt“, bist du startklar! 🎉
 
 ---
 
@@ -407,12 +413,17 @@ In der `.env` kannst du den Anbieter wechseln (Details stehen als Kommentar in `
 
 | `AI_PROVIDER=` | Was | Schlüssel |
 |---|---|---|
-| `github` (Standard) | GitHub Models, Standard-Modell `openai/gpt-4.1-mini` | `GITHUB_TOKEN` |
-| `nvidia` | NVIDIA, Standard-Modell `meta/llama-3.3-70b-instruct` | `NVIDIA_API_KEY` |
+| `nvidia` (Standard) | [NVIDIA](https://build.nvidia.com), Standard-Modell `nvidia/nemotron-3.5-lightning-30b-a3b` | `NVIDIA_API_KEY` |
+| `groq` | [Groq](https://console.groq.com/keys), Standard-Modell `openai/gpt-oss-120b` | `GROQ_API_KEY` |
 | `custom` | alles, was „OpenAI-kompatibel“ ist, z. B. [Ollama](https://ollama.com) auf dem eigenen Rechner | `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL` |
 
-Mit `AI_MODEL=...` kannst du ein anderes Modell wählen. Nicht jedes Modell kann gut mit Tools umgehen –
+Mit `AI_MODEL=...` kannst du ein anderes Modell wählen (bei NVIDIA findest du alle Modelle auf
+[build.nvidia.com/models](https://build.nvidia.com/models)). Nicht jedes Modell kann gut mit Tools umgehen –
 wenn der Agent Tools ignoriert oder komische Antworten gibt, wechsle zurück zum Standard.
+Mit `python check_tools.py --llm` kannst du ein Modell schnell testen.
+
+> Anbieter schalten ältere Modelle regelmäßig ab. Kommt die Meldung „Das Modell … wurde vom Anbieter
+> abgeschaltet“, trage bei `AI_MODEL=` ein aktuelles Modell ein.
 
 ---
 
@@ -424,8 +435,9 @@ wenn der Agent Tools ignoriert oder komische Antworten gibt, wechsle zurück zum
 | `ModuleNotFoundError: No module named 'openai'` (oder `dotenv`, `httpx`) | Umgebung nicht aktiv: `.venv\Scripts\activate` (Win) bzw. `source .venv/bin/activate` (Mac), ggf. nochmal `pip install -r requirements.txt` |
 | „Ausführung von Skripts ist deaktiviert“ | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` – geht das nicht: `Set-ExecutionPolicy -Scope Process Bypass` oder die Eingabeaufforderung mit `.venv\Scripts\activate.bat` benutzen (Details in Schritt 2) |
 | „Keine .env-Datei gefunden“ | `.env.example` kopieren und Kopie `.env` nennen (Schritt 4). Achtung: Windows versteckt manchmal Dateiendungen – die Datei darf nicht `.env.txt` heißen. |
-| „Kein API-Key gefunden“ | In `.env` steht noch `hier_deinen_token_einfuegen` – echten Token eintragen und speichern. |
-| „Der API-Key wurde abgelehnt“ / „Zugriff verweigert“ | Token falsch kopiert oder ohne Berechtigung „Models“ erstellt → neuen Token erstellen (Schritt 3). |
+| „Kein API-Key gefunden“ | In `.env` steht noch `hier_deinen_key_einfuegen` – echten Schlüssel eintragen und speichern. |
+| „Der API-Key wurde abgelehnt“ / „Zugriff verweigert“ | Schlüssel falsch oder unvollständig kopiert → neuen Schlüssel erstellen (Schritt 3). |
+| „Das Modell … wurde vom Anbieter abgeschaltet“ | In `.env` bei `AI_MODEL=` ein aktuelles Modell eintragen (siehe [Andere Sprachmodelle](#andere-sprachmodelle)). |
 | „Zu viele Anfragen (Rate-Limit)“ | Das kostenlose Kontingent ist kurz aufgebraucht – ein paar Minuten warten. |
 | Mein Tool taucht nicht auf | `python check_tools.py` ausführen. Häufige Ursachen: `@tool` vergessen, Datei liegt nicht in `tools/`, Dateiname beginnt mit `_`, Tippfehler (die Meldung sagt dir die Zeile). |
 | „Tools, die es nicht gibt“ beim Agent | In `TOOLS = [...]` muss der **Funktionsname** stehen, nicht der Dateiname. |
