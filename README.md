@@ -270,17 +270,6 @@ def wuerfeln(seiten: int = 6, ...):     # ← Name des Tools + Parameter mit Typ
 > 💡 **Fehler sind erlaubt!** Wenn in deinem Tool etwas schiefgeht (z. B. `raise ValueError("Stadt nicht gefunden")`),
 > stürzt nicht alles ab. Das Sprachmodell bekommt die Fehlermeldung und kann darauf reagieren.
 
-### Ideen für weitere Tools
-
-| Idee | Tipp |
-|---|---|
-| Passwort-Generator | `random.choice("abc...")` in einer Schleife |
-| Einheiten-Umrechner (km ↔ Meilen, °C ↔ °F) | einfache Rechnung |
-| Countdown bis zu den Semesterferien | `from datetime import date`, `(date(2027, 2, 1) - date.today()).days` |
-| Wikipedia-Zusammenfassung | `httpx.get(f"https://de.wikipedia.org/api/rest_v1/page/summary/{begriff}", timeout=10).json()["extract"]` – schau dir `tools/wetter.py` als Beispiel an |
-| Witze-Sammlung | Liste mit Witzen + `random.choice(...)` |
-| To-do-Liste | wie `tools/notizen.py`, aber mit „erledigt“-Funktion |
-
 ---
 
 ## 4. Dein eigener Agent
