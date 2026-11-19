@@ -1,0 +1,11 @@
+# Geheime Schlüssel – niemals hochladen!
+.env
+
+# Erzeugte Dateien
+notizen.txt
+agent.log
+__pycache__/
+.venv/
+venv/
+.gradio/
+.idea/
