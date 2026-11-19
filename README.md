@@ -56,11 +56,11 @@ Danach das Terminal schließen und neu öffnen.
 Projekt herunterladen (im Terminal, in dem Ordner, in dem das Projekt landen soll):
 
 ```
-git clone https://github.com/Jakob63/AKI_Uebung7.git
-cd AKI_Uebung7
+git clone https://github.com/Jakob63/AKI_Uebung_7.git
+cd AKI_Uebung_7
 ```
 
-> Kein `git` installiert? Dann auf der [GitHub-Seite](https://github.com/Jakob63/AKI_Uebung7)
+> Kein `git` installiert? Dann auf der [GitHub-Seite](https://github.com/Jakob63/AKI_Uebung_7)
 > auf den grünen Knopf **Code → Download ZIP** klicken und die ZIP-Datei entpacken.
 > Danach im Terminal in den entpackten Ordner wechseln: `cd ` tippen (mit Leerzeichen!),
 > den Ordner aus dem Explorer/Finder ins Terminal **ziehen** und Enter drücken.
