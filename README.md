@@ -12,8 +12,7 @@ In dieser Vorlage ist das ganze "Drumherum" schon fertig. **Du schreibst nur noc
 - 🧑‍🏫 **Agents** – eine Datei mit einer Rollenbeschreibung und einer Liste erlaubter Tools.
 
 > **Keine Programmiererfahrung?** Kein Problem. Folge einfach den Schritten der Reihe nach.
-> Alles, was du eintippen musst, steht in grauen Kästen. Am Ende gibt es einen
-> [Mini-Spickzettel zu Python](#-mini-spickzettel-python).
+> Alles, was du eintippen musst, steht in grauen Kästen.
 
 ---
 
@@ -418,30 +417,3 @@ Mit `python check_tools.py --llm` kannst du ein Modell schnell testen.
 | Irgendein anderer Fehler | Die Datei `agent.log` enthält Details. Oder mit `python main.py --debug` starten. |
 
 ---
-
-## 🐍 Mini-Spickzettel Python
-
-```python
-# Kommentar – wird von Python ignoriert
-
-name = "Konstanz"          # str   = Text (immer in Anführungszeichen)
-anzahl = 3                 # int   = ganze Zahl
-preis = 2.50               # float = Kommazahl (mit PUNKT!)
-fertig = True              # bool  = True oder False
-staedte = ["Ulm", "Lindau"]                 # list  = Liste
-person = {"name": "Kim", "alter": 19}       # dict  = "Steckbrief" aus Schlüssel: Wert
-
-def begruessen(name: str) -> str:   # Funktion mit Parameter "name" vom Typ Text
-    return "Hallo " + name          # return = das Ergebnis der Funktion
-
-if anzahl > 2:             # Bedingung (Doppelpunkt + Einrückung beachten!)
-    print("viele")
-
-for stadt in staedte:      # Schleife: einmal für jedes Element
-    print(stadt)
-```
-
-**Einrückung ist wichtig!** Alles, was zu einer Funktion, einem `if` oder einer Schleife gehört,
-ist um 4 Leerzeichen eingerückt.
-
-Viel Spaß beim Bauen! 🚀
