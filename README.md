@@ -102,7 +102,7 @@ Das Sprachmodell läuft nicht auf deinem Rechner, sondern bei einem Anbieter im 
 Dafür brauchst du einen Schlüssel. Wir nehmen **NVIDIA** – kostenlos mit einem NVIDIA-Account.
 
 1. Öffne [build.nvidia.com](https://build.nvidia.com) und klicke oben rechts auf **Login**.
-   Falls du noch keinen Account hast: kostenlos registrieren (E-Mail genügt).
+   Falls du noch keinen Account hast: kostenlos registrieren.
 2. Nach dem Anmelden: Klicke auf **Get API Key** (oben rechts oder auf der Seite eines Modells)
    und dann auf **Generate Key**.
 3. Den Schlüssel (fängt mit `nvapi-` an) **kopieren**. Du siehst ihn nur einmal!
