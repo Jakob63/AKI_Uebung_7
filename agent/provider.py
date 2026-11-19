@@ -15,7 +15,7 @@ from openai import OpenAI
 
 # Bekannte Anbieter: Name -> (Adresse, Standard-Modell, Name der Key-Variable in .env)
 ANBIETER = {
-    "nvidia": ("https://integrate.api.nvidia.com/v1", "nvidia/nemotron-3.5-lightning-30b-a3b", "NVIDIA_API_KEY"),
+    "nvidia": ("https://integrate.api.nvidia.com/v1", "mistralai/mistral-large-4-1t-a52b", "NVIDIA_API_KEY"),
     "groq": ("https://api.groq.com/openai/v1", "openai/gpt-oss-120b", "GROQ_API_KEY"),
     "custom": (None, None, "AI_API_KEY"),  # alles selbst in .env eintragen (z. B. Ollama, OpenAI)
 }

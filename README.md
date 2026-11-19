@@ -413,7 +413,7 @@ In der `.env` kannst du den Anbieter wechseln (Details stehen als Kommentar in `
 
 | `AI_PROVIDER=` | Was | Schlüssel |
 |---|---|---|
-| `nvidia` (Standard) | [NVIDIA](https://build.nvidia.com), Standard-Modell `nvidia/nemotron-3.5-lightning-30b-a3b` | `NVIDIA_API_KEY` |
+| `nvidia` (Standard) | [NVIDIA](https://build.nvidia.com), Standard-Modell `mistralai/mistral-large-4-1t-a52b` (Mistral Large 4) | `NVIDIA_API_KEY` |
 | `groq` | [Groq](https://console.groq.com/keys), Standard-Modell `openai/gpt-oss-120b` | `GROQ_API_KEY` |
 | `custom` | alles, was „OpenAI-kompatibel“ ist, z. B. [Ollama](https://ollama.com) auf dem eigenen Rechner | `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL` |
 
