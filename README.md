@@ -19,7 +19,7 @@ In dieser Vorlage ist das ganze "Drumherum" schon fertig. **Du schreibst nur noc
 
 ## Inhalt
 
-1. [Einmalig einrichten](#1-einmalig-einrichten) (ca. 15 Minuten)
+1. [Einmalig einrichten](#1-einmalig-einrichten) (ca. 10 Minuten)
 2. [Den Agent starten](#2-den-agent-starten)
 3. [Dein erstes eigenes Tool](#3-dein-erstes-eigenes-tool)
 4. [Dein eigener Agent](#4-dein-eigener-agent)
@@ -31,27 +31,12 @@ In dieser Vorlage ist das ganze "Drumherum" schon fertig. **Du schreibst nur noc
 
 ## 1. Einmalig einrichten
 
-### Schritt 1: Python installieren
-
-Prüfe zuerst, ob Python schon da ist. Öffne ein **Terminal**:
-
-- **Windows:** Startmenü → „PowerShell“ eintippen → öffnen
-- **Mac:** Programme → Dienstprogramme → „Terminal“
-
-Tippe ein und drücke Enter:
-
-```
-python --version
-```
-
-Steht da `Python 3.10` oder eine höhere Zahl (auch die allerneueste Version ist in Ordnung)? Super, weiter mit Schritt 2.
-Sonst: Python von [python.org/downloads](https://www.python.org/downloads/) installieren.
-**Windows: Beim Installieren unbedingt den Haken bei „Add python.exe to PATH“ setzen!**
-Danach das Terminal schließen und neu öffnen.
-
+> **Voraussetzung:** Python (Version 3.10 oder neuer) ist installiert.
+> Alle Befehle tippst du in ein **Terminal** – am einfachsten das Terminal in VS Code
+> (*Terminal → Neues Terminal*), sonst Windows: „PowerShell“, Mac: „Terminal“.
 > Auf dem Mac heißt der Befehl manchmal `python3` statt `python` (und `pip3` statt `pip`).
 
-### Schritt 2: Projekt herunterladen, in den Ordner wechseln und Pakete installieren
+### Schritt 1: Projekt herunterladen, in den Ordner wechseln und Pakete installieren
 
 Projekt herunterladen (im Terminal, in dem Ordner, in dem das Projekt landen soll):
 
@@ -111,7 +96,7 @@ Wenn vorne im Terminal jetzt `(.venv)` steht, hat es geklappt. Die Installation 
 > ⚠️ **Wichtig:** Jedes Mal, wenn du ein neues Terminal öffnest, musst du die Umgebung wieder
 > aktivieren (`.venv\Scripts\activate` bzw. `source .venv/bin/activate`).
 
-### Schritt 3: Einen kostenlosen Schlüssel (API-Key) besorgen
+### Schritt 2: Einen kostenlosen Schlüssel (API-Key) besorgen
 
 Das Sprachmodell läuft nicht auf deinem Rechner, sondern bei einem Anbieter im Internet.
 Dafür brauchst du einen Schlüssel. Wir nehmen **NVIDIA** – kostenlos mit einem NVIDIA-Account.
@@ -122,7 +107,7 @@ Dafür brauchst du einen Schlüssel. Wir nehmen **NVIDIA** – kostenlos mit ein
    und dann auf **Generate Key**.
 3. Den Schlüssel (fängt mit `nvapi-` an) **kopieren**. Du siehst ihn nur einmal!
 
-### Schritt 4: Den Schlüssel eintragen
+### Schritt 3: Den Schlüssel eintragen
 
 1. Kopiere die Datei `.env.example` im Projektordner und nenne die Kopie **`.env`**
    (genau so: Punkt am Anfang, keine Endung).
@@ -136,7 +121,7 @@ Dafür brauchst du einen Schlüssel. Wir nehmen **NVIDIA** – kostenlos mit ein
 
 > 🔒 Die `.env` ist **geheim**. Nicht weitergeben, nicht hochladen, nicht in Screenshots zeigen.
 
-### Schritt 5: Testen, ob alles da ist
+### Schritt 4: Testen, ob alles da ist
 
 ```
 python check_tools.py
@@ -431,12 +416,12 @@ Mit `python check_tools.py --llm` kannst du ein Modell schnell testen.
 
 | Meldung / Problem | Lösung |
 |---|---|
-| `python` wird nicht gefunden | Python installieren (Schritt 1). Mac: `python3` benutzen. Windows: Bei der Installation „Add to PATH“ anhaken. |
+| `python` wird nicht gefunden | Mac: `python3` benutzen. Windows: Python ist nicht (richtig) installiert – bei der Installation „Add python.exe to PATH“ anhaken. |
 | `ModuleNotFoundError: No module named 'openai'` (oder `dotenv`, `httpx`) | Umgebung nicht aktiv: `.venv\Scripts\activate` (Win) bzw. `source .venv/bin/activate` (Mac), ggf. nochmal `pip install -r requirements.txt` |
-| „Ausführung von Skripts ist deaktiviert“ | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` – geht das nicht: `Set-ExecutionPolicy -Scope Process Bypass` oder die Eingabeaufforderung mit `.venv\Scripts\activate.bat` benutzen (Details in Schritt 2) |
-| „Keine .env-Datei gefunden“ | `.env.example` kopieren und Kopie `.env` nennen (Schritt 4). Achtung: Windows versteckt manchmal Dateiendungen – die Datei darf nicht `.env.txt` heißen. |
+| „Ausführung von Skripts ist deaktiviert“ | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` – geht das nicht: `Set-ExecutionPolicy -Scope Process Bypass` oder die Eingabeaufforderung mit `.venv\Scripts\activate.bat` benutzen (Details in Schritt 1) |
+| „Keine .env-Datei gefunden“ | `.env.example` kopieren und Kopie `.env` nennen (Schritt 3). Achtung: Windows versteckt manchmal Dateiendungen – die Datei darf nicht `.env.txt` heißen. |
 | „Kein API-Key gefunden“ | In `.env` steht noch `hier_deinen_key_einfuegen` – echten Schlüssel eintragen und speichern. |
-| „Der API-Key wurde abgelehnt“ / „Zugriff verweigert“ | Schlüssel falsch oder unvollständig kopiert → neuen Schlüssel erstellen (Schritt 3). |
+| „Der API-Key wurde abgelehnt“ / „Zugriff verweigert“ | Schlüssel falsch oder unvollständig kopiert → neuen Schlüssel erstellen (Schritt 2). |
 | „Das Modell … wurde vom Anbieter abgeschaltet“ | In `.env` bei `AI_MODEL=` ein aktuelles Modell eintragen (siehe [Andere Sprachmodelle](#andere-sprachmodelle)). |
 | „Zu viele Anfragen (Rate-Limit)“ | Das kostenlose Kontingent ist kurz aufgebraucht – ein paar Minuten warten. |
 | Mein Tool taucht nicht auf | `python check_tools.py` ausführen. Häufige Ursachen: `@tool` vergessen, Datei liegt nicht in `tools/`, Dateiname beginnt mit `_`, Tippfehler (die Meldung sagt dir die Zeile). |

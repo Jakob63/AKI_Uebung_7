@@ -31,7 +31,7 @@ def einstellungen_lesen() -> dict:
         raise ProviderFehler(
             "Keine .env-Datei gefunden.\n"
             "So geht's: Kopiere die Datei .env.example und nenne die Kopie .env.\n"
-            "Trage dort deinen API-Key ein (Anleitung steht in der README.md, Schritt 3)."
+            "Trage dort deinen API-Key ein (Anleitung steht in der README.md, Schritt 2)."
         )
     load_dotenv(".env", override=True)
 
@@ -49,7 +49,7 @@ def einstellungen_lesen() -> dict:
     if not api_key or api_key.startswith("hier_"):
         raise ProviderFehler(
             f"Kein API-Key gefunden. Öffne die Datei .env und trage bei {key_name}= deinen Schlüssel ein.\n"
-            f"(Wie du an einen kostenlosen Schlüssel kommst, steht in der README.md, Schritt 3.)"
+            f"(Wie du an einen kostenlosen Schlüssel kommst, steht in der README.md, Schritt 2.)"
         )
     if not base_url or not modell:
         raise ProviderFehler(
