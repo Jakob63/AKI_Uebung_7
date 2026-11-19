@@ -41,7 +41,6 @@ Projekt herunterladen (im Terminal, in dem Ordner, in dem das Projekt landen sol
 
 ```
 git clone https://github.com/Jakob63/AKI_Uebung_7.git
-cd AKI_Uebung_7
 ```
 
 > Kein `git` installiert? Dann auf der [GitHub-Seite](https://github.com/Jakob63/AKI_Uebung_7)
@@ -58,14 +57,22 @@ und die Pakete installieren:
 **Windows (PowerShell):**
 ```
 python -m venv .venv
+```
+```
 .venv\Scripts\activate
+```
+```
 pip install -r requirements.txt
 ```
 
 **Mac / Linux:**
 ```
 python3 -m venv .venv
+```
+```
 source .venv/bin/activate
+```
+```
 pip install -r requirements.txt
 ```
 
@@ -83,6 +90,8 @@ Wenn vorne im Terminal jetzt `(.venv)` steht, hat es geklappt. Die Installation 
 >    erlaube es nur für das aktuelle Terminal (muss in jedem neuen Terminal wiederholt werden):
 >    ```
 >    Set-ExecutionPolicy -Scope Process Bypass
+>    ```
+>    ```
 >    .venv\Scripts\activate
 >    ```
 > 3. Oder benutze die **Eingabeaufforderung** statt PowerShell – dort gibt es die Sperre nicht.
