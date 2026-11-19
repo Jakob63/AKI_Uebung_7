@@ -186,6 +186,14 @@ def tools_laden(ordner: str | Path = "tools") -> dict[str, dict]:
             continue  # schon geladen
         try:
             importlib.import_module(modulname)
+        except ModuleNotFoundError as fehler:
+            # Ein Paket fehlt (z. B. httpx) -> meist ist die Umgebung nicht aktiv oder nicht installiert
+            LADEFEHLER[datei.name] = (
+                f"Das Python-Paket '{fehler.name}' fehlt. Ist die Umgebung aktiv (.venv)? "
+                f"Dann einmal 'pip install -r requirements.txt' ausführen. "
+                f"(Für ein eigenes Paket: 'pip install {fehler.name}')"
+            )
+            logger.error("Fehler beim Laden von %s\n%s", datei, traceback.format_exc())
         except Exception as fehler:
             # Ein kaputtes Tool soll nicht die ganze Vorlage lahmlegen -> merken und weitermachen
             LADEFEHLER[datei.name] = f"{type(fehler).__name__}: {fehler}"

@@ -150,7 +150,7 @@ def tool_aufruf_bearbeiten(name: str, argumente_json: str, agent: dict, bestaeti
 def llm_fragen(client, anfrage: dict, nachrichten: list[dict]):
     """Schickt die Anfrage ans LLM und übersetzt typische Fehler in verständliche Meldungen."""
     try:
-        return client.chat.completions.create(**anfrage)
+        antwort = client.chat.completions.create(**anfrage)
     except openai.AuthenticationError as e:
         raise AgentFehler("Der API-Key wurde abgelehnt. Prüfe den Schlüssel in der Datei .env.") from e
     except openai.PermissionDeniedError as e:
@@ -179,3 +179,18 @@ def llm_fragen(client, anfrage: dict, nachrichten: list[dict]):
     except openai.APIError as e:
         logger.exception("Unerwarteter API-Fehler")
         raise AgentFehler(f"Fehler vom LLM-Anbieter: {e}") from e
+
+    # Schickt der Anbieter kein JSON zurück, gibt die openai-Bibliothek einfach den rohen Text
+    # zurück statt einen Fehler zu melden. Das fangen wir hier ab.
+    if isinstance(antwort, str) or not getattr(antwort, "choices", None):
+        roh = str(antwort)
+        logger.error("Unerwartete Antwort vom LLM-Anbieter (Modell %s):\n%s", anfrage["model"], roh[:3000])
+        anfang = " ".join(roh.split())[:200]
+        raise AgentFehler(
+            "Der LLM-Anbieter hat eine Antwort in einem unerwarteten Format geschickt.\n"
+            "Mögliche Ursachen: Ein WLAN mit Anmeldeseite (erst im Browser anmelden), eine falsche "
+            "AI_BASE_URL in .env oder ein Problem beim Anbieter.\n"
+            f"Anfang der Antwort: {anfang or '(leer)'}\n"
+            "(Die komplette Antwort steht in agent.log.)"
+        )
+    return antwort

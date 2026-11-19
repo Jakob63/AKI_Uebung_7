@@ -77,7 +77,8 @@ def main():
     for datei, fehler in LADEFEHLER.items():
         probleme += 1
         print(f"\n❌ tools/{datei} konnte nicht geladen werden:\n   {fehler}")
-        print("   Tipp: Steht 'from agent import tool' oben in der Datei? Tippfehler? Einrückung?")
+        if "fehlt" not in fehler:
+            print("   Tipp: Steht 'from agent import tool' oben in der Datei? Tippfehler? Einrückung?")
 
     for name, info in ALLE_TOOLS.items():
         if nur and name != nur:
