@@ -44,7 +44,7 @@ Tippe ein und drücke Enter:
 python --version
 ```
 
-Steht da `Python 3.10` oder eine höhere Zahl? Super, weiter mit Schritt 2.
+Steht da `Python 3.10` oder eine höhere Zahl (auch die allerneueste Version ist in Ordnung)? Super, weiter mit Schritt 2.
 Sonst: Python von [python.org/downloads](https://www.python.org/downloads/) installieren.
 **Windows: Beim Installieren unbedingt den Haken bei „Add python.exe to PATH“ setzen!**
 Danach das Terminal schließen und neu öffnen.
@@ -85,10 +85,28 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Wenn vorne im Terminal jetzt `(.venv)` steht, hat es geklappt. Die Installation dauert ein paar Minuten.
+Wenn vorne im Terminal jetzt `(.venv)` steht, hat es geklappt. Die Installation dauert meist unter einer Minute.
 
 > ⚠️ **Windows-Fehler „Ausführung von Skripts ist auf diesem System deaktiviert“?**
-> Einmal `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` eingeben, mit `J` bestätigen, nochmal versuchen.
+> Das ist ein Windows-Schutz für PowerShell. So geht's trotzdem:
+>
+> 1. Diese Zeile eingeben, mit `J` (oder `Y`) bestätigen und danach die `activate`-Zeile nochmal ausführen:
+>    ```
+>    Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+>    ```
+>    Das musst du nur **einmal** machen, es gilt dauerhaft für deinen Windows-Benutzer.
+> 2. Klappt das nicht (z. B. Meldung über *Gruppenrichtlinien* auf Hochschul- oder Firmenrechnern),
+>    erlaube es nur für das aktuelle Terminal (muss in jedem neuen Terminal wiederholt werden):
+>    ```
+>    Set-ExecutionPolicy -Scope Process Bypass
+>    .venv\Scripts\activate
+>    ```
+> 3. Oder benutze die **Eingabeaufforderung** statt PowerShell – dort gibt es die Sperre nicht.
+>    In VS Code: im Terminal oben rechts auf den kleinen Pfeil neben dem **+** klicken →
+>    **„Command Prompt“** wählen, dann:
+>    ```
+>    .venv\Scripts\activate.bat
+>    ```
 >
 > ⚠️ **Wichtig:** Jedes Mal, wenn du ein neues Terminal öffnest, musst du die Umgebung wieder
 > aktivieren (`.venv\Scripts\activate` bzw. `source .venv/bin/activate`).
@@ -173,9 +191,9 @@ python main.py --debug
 python web.py
 ```
 
-Der Browser öffnet sich automatisch (sonst [http://127.0.0.1:7860](http://127.0.0.1:7860) aufrufen).
+Der Browser öffnet sich automatisch (sonst die Adresse aufrufen, die im Terminal steht, meist [http://127.0.0.1:7860](http://127.0.0.1:7860)).
 Oben wählst du den Agent aus. Die aufklappbaren Kästen „🔧 Tool benutzt“ zeigen, was der Agent getan hat.
-Wenn der Agent etwas Wichtiges tun will (z. B. eine Notiz speichern), fragt er nach – antworte dann mit **ja**.
+Wenn der Agent etwas Wichtiges tun will (z. B. eine Notiz speichern), fragt er nach – klicke dann auf **Ja, ausführen** oder antworte mit **ja**.
 
 Beenden: im Terminal **Strg + C** drücken.
 
@@ -377,7 +395,8 @@ Ausgeführt wird es von unserem Programm – deshalb können wir auch vorher nac
     ├── tool_registry.py ←    @tool: macht aus einer Funktion ein Tool (Beschreibung fürs Modell)
     ├── agenten.py       ←    liest die Dateien in agents/
     ├── provider.py      ←    Verbindung zum Sprachmodell (liest .env)
-    └── loop.py          ←    der Agent-Loop aus dem Bild oben
+    ├── loop.py          ←    der Agent-Loop aus dem Bild oben
+    └── webseite.html    ←    die Chat-Seite, die web.py im Browser anzeigt
 ```
 
 Dateien, deren Name mit `_` beginnt, werden ignoriert – deshalb sind die Vorlagen keine echten Tools/Agents.
@@ -402,8 +421,8 @@ wenn der Agent Tools ignoriert oder komische Antworten gibt, wechsle zurück zum
 | Meldung / Problem | Lösung |
 |---|---|
 | `python` wird nicht gefunden | Python installieren (Schritt 1). Mac: `python3` benutzen. Windows: Bei der Installation „Add to PATH“ anhaken. |
-| `ModuleNotFoundError: No module named 'openai'` (oder `gradio`, `dotenv`) | Umgebung nicht aktiv: `.venv\Scripts\activate` (Win) bzw. `source .venv/bin/activate` (Mac), ggf. nochmal `pip install -r requirements.txt` |
-| „Ausführung von Skripts ist deaktiviert“ | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+| `ModuleNotFoundError: No module named 'openai'` (oder `dotenv`, `httpx`) | Umgebung nicht aktiv: `.venv\Scripts\activate` (Win) bzw. `source .venv/bin/activate` (Mac), ggf. nochmal `pip install -r requirements.txt` |
+| „Ausführung von Skripts ist deaktiviert“ | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` – geht das nicht: `Set-ExecutionPolicy -Scope Process Bypass` oder die Eingabeaufforderung mit `.venv\Scripts\activate.bat` benutzen (Details in Schritt 2) |
 | „Keine .env-Datei gefunden“ | `.env.example` kopieren und Kopie `.env` nennen (Schritt 4). Achtung: Windows versteckt manchmal Dateiendungen – die Datei darf nicht `.env.txt` heißen. |
 | „Kein API-Key gefunden“ | In `.env` steht noch `hier_deinen_token_einfuegen` – echten Token eintragen und speichern. |
 | „Der API-Key wurde abgelehnt“ / „Zugriff verweigert“ | Token falsch kopiert oder ohne Berechtigung „Models“ erstellt → neuen Token erstellen (Schritt 3). |

@@ -3,82 +3,96 @@ Web-Oberfläche (Chat im Browser) – benutzt denselben Agent-Loop wie main.py.
 
 Starten:
     python web.py
-Dann öffnet sich der Browser (sonst: http://127.0.0.1:7860 aufrufen).
+Dann öffnet sich der Browser (sonst die Adresse aufrufen, die im Terminal steht).
+Beenden: im Terminal Strg + C drücken.
 
 Diese Datei musst du NICHT ändern: Neue Tools und neue Agents erscheinen automatisch.
+
+Wie funktioniert das? Python bringt einen kleinen Webserver mit (http.server).
+Der liefert die Seite agent/webseite.html aus. Wenn du im Browser eine Nachricht
+abschickst, ruft die Seite /api/chat auf – und hier läuft dann der Agent-Loop.
 """
 
 import json
 import logging
 import os
 import sys
+import threading
+import webbrowser
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
+if sys.version_info < (3, 10):
+    sys.exit("❌ Du brauchst Python 3.10 oder neuer. Installiere eine neuere Version von python.org.")
 
 os.chdir(Path(__file__).parent)  # immer im Projektordner arbeiten
 sys.stdout.reconfigure(encoding="utf-8")
 
-import gradio as gr  # noqa: E402
-
 from agent.agenten import STANDARD_AGENT, KonfigFehler, agent_laden, agenten_auflisten  # noqa: E402
 from agent.loop import AgentFehler, antworten  # noqa: E402
 from agent.provider import ProviderFehler  # noqa: E402
-from agent.tool_registry import LADEFEHLER, tool_ausfuehren, tools_laden  # noqa: E402
+from agent.tool_registry import ALLE_TOOLS, LADEFEHLER, tool_ausfuehren, tools_laden  # noqa: E402
 
 logging.basicConfig(filename="agent.log", level=logging.INFO, encoding="utf-8",
                     format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-tools_laden()
-
-# Aktionen, die auf ein "ja" des Nutzers warten (@tool(bestaetigen=True)).
-# Einfach eine globale Liste – die Web-UI läuft ja nur lokal für dich.
-offene_aktionen: list[dict] = []
+WEBSEITE = Path("agent/webseite.html")
+JA_ANTWORTEN = ("ja", "j", "yes", "y", "ok", "jo", "ja bitte", "mach")
 
 
-def als_text(argumente: dict) -> str:
-    return json.dumps(argumente, ensure_ascii=False)
+# ---------------------------------------------------------------------------
+# Was der Server kann
+# ---------------------------------------------------------------------------
+
+def agenten_infos() -> dict:
+    """Alle Agents für das Auswahlmenü + Warnungen über kaputte Tools."""
+    agenten = []
+    for kennung in agenten_auflisten():
+        try:
+            a = agent_laden(kennung)
+            agenten.append({"kennung": kennung, "name": a["name"],
+                            "beschreibung": a["beschreibung"], "tools": a["tools"]})
+        except Exception as fehler:
+            agenten.append({"kennung": kennung, "name": kennung, "fehler": str(fehler), "tools": []})
+    return {
+        "agenten": agenten,
+        "standard": STANDARD_AGENT,
+        "warnungen": [f"tools/{d} konnte nicht geladen werden: {f}" for d, f in LADEFEHLER.items()],
+    }
 
 
-def tool_nachricht(name: str, argumente: dict, ergebnis: str) -> gr.ChatMessage:
-    """Ein aufklappbarer Kasten im Chat, der einen Tool-Aufruf zeigt."""
-    return gr.ChatMessage(
-        role="assistant",
-        content=f"**Argumente:** `{als_text(argumente)}`\n\n**Ergebnis:**\n```\n{ergebnis[:1500]}\n```",
-        metadata={"title": f"🔧 Tool benutzt: {name}", "status": "done"},
-    )
-
-
-def verlauf_umwandeln(gradio_verlauf: list) -> list[dict]:
-    """Gradio speichert den Chat in einem eigenen Format. Wir behalten nur die echten
-    Nachrichten (keine Tool-Kästen) und machen daraus {"role": ..., "content": "..."}."""
-    verlauf = []
-    for n in gradio_verlauf:
-        if (n.get("metadata") or {}).get("title"):
-            continue  # Tool-Kasten oder Hinweis -> nicht ans LLM schicken
-        inhalt = n.get("content")
-        if isinstance(inhalt, list):  # neuere Gradio-Versionen: Liste von Textstücken
-            inhalt = " ".join(t.get("text", "") for t in inhalt if isinstance(t, dict))
-        if isinstance(inhalt, str):
-            verlauf.append({"role": n["role"], "content": inhalt})
-    return verlauf
-
-
-def chat(nachricht: str, gradio_verlauf: list, agent_kennung: str):
-    """Wird von Gradio bei jeder neuen Nachricht aufgerufen. Gibt die Chat-Blasen zurück."""
-    global offene_aktionen
+def chat(anfrage: dict, senden):
+    """Beantwortet eine Chat-Nachricht. Jedes Ereignis (Tool-Aufruf, Antwort …) wird sofort
+    mit senden({...}) an den Browser geschickt – so sieht man live, was der Agent tut."""
     try:
-        agent = agent_laden(agent_kennung)
-    except KonfigFehler as fehler:
-        return f"❌ {fehler}"
+        agent = agent_laden(anfrage.get("agent") or STANDARD_AGENT)
+    except Exception as fehler:
+        senden({"typ": "fehler", "text": str(fehler)})
+        return
 
-    anzeige = []  # alles, was wir gleich im Chat anzeigen
+    nachricht = (anfrage.get("nachricht") or "").strip()
+    verlauf = [n for n in anfrage.get("verlauf", []) if isinstance(n, dict)]
+    offene = anfrage.get("offene_aktionen") or []
 
-    # --- Callbacks für den Agent-Loop ------------------------------------------
+    # --- Hat der Nutzer eine offene Aktion bestätigt? ------------------------------
+    an_llm = nachricht
+    if offene and nachricht.lower().rstrip("!.") in JA_ANTWORTEN:
+        infos = []
+        for aktion in offene:
+            name, argumente = aktion.get("name"), aktion.get("argumente") or {}
+            # Nur Tools ausführen, die dieser Agent hat und die eine Bestätigung brauchen
+            if name not in agent["tools"] or not ALLE_TOOLS[name]["bestaetigen"]:
+                continue
+            ergebnis = tool_ausfuehren(name, argumente)
+            senden({"typ": "tool", "name": name, "argumente": argumente, "ergebnis": ergebnis})
+            infos.append(f"{name}({json.dumps(argumente, ensure_ascii=False)}) -> {ergebnis}")
+        if infos:
+            # Zusatzinfo als Teil der user-Nachricht (nicht als zweite system-Nachricht!)
+            an_llm = (f"{nachricht}\n\n[Info: Ich habe bestätigt. Folgende Aktionen wurden ausgeführt: "
+                      f"{'; '.join(infos)}. Bitte nicht noch einmal ausführen.]")
+
+    # --- Callbacks für den Agent-Loop ----------------------------------------------
     neue_aktionen = []
-
-    def tool_anzeigen(name, argumente, ergebnis):
-        if {"name": name, "argumente": argumente} in neue_aktionen:
-            return  # wartet noch auf "ja" -> dafür zeigen wir unten einen eigenen Hinweis
-        anzeige.append(tool_nachricht(name, argumente, ergebnis))
 
     def bestaetigen(name, argumente):
         # Im Browser können wir nicht mitten im Loop "j/n" fragen. Deshalb merken wir uns die
@@ -86,88 +100,106 @@ def chat(nachricht: str, gradio_verlauf: list, agent_kennung: str):
         neue_aktionen.append({"name": name, "argumente": argumente})
         return False
 
-    # --- Hat der Nutzer eine offene Aktion mit "ja" bestätigt? -------------------
-    an_llm = nachricht
-    if offene_aktionen and nachricht.strip().lower().rstrip("!.") in ("ja", "j", "yes", "ok", "jo"):
-        infos = []
-        for aktion in offene_aktionen:
-            ergebnis = tool_ausfuehren(aktion["name"], aktion["argumente"])
-            tool_anzeigen(aktion["name"], aktion["argumente"], ergebnis)
-            infos.append(f"{aktion['name']}({als_text(aktion['argumente'])}) -> {ergebnis}")
-        # Zusätzliche Infos schicken wir als Teil der user-Nachricht (nicht als zweite system-Nachricht!)
-        an_llm = (f"{nachricht}\n\n[Info: Ich habe bestätigt. Folgende Aktionen wurden ausgeführt: "
-                  f"{'; '.join(infos)}. Bitte nicht noch einmal ausführen.]")
-    offene_aktionen = []
+    def tool_anzeigen(name, argumente, ergebnis):
+        if {"name": name, "argumente": argumente} in neue_aktionen:
+            return  # wartet noch auf "ja" -> dafür gibt es unten einen eigenen Hinweis
+        senden({"typ": "tool", "name": name, "argumente": argumente, "ergebnis": ergebnis})
 
-    # --- Agent-Loop starten (derselbe wie im Terminal) ---------------------------
-    verlauf = verlauf_umwandeln(gradio_verlauf) + [{"role": "user", "content": an_llm}]
+    # --- Agent-Loop starten (derselbe wie im Terminal) -------------------------------
     try:
-        antwort = antworten(agent, verlauf, on_tool_call=tool_anzeigen, bestaetigen=bestaetigen)
+        antwort = antworten(agent, verlauf + [{"role": "user", "content": an_llm}],
+                            on_tool_call=tool_anzeigen, bestaetigen=bestaetigen)
     except (AgentFehler, ProviderFehler) as fehler:
-        return anzeige + [gr.ChatMessage(role="assistant", content=f"❌ {fehler}")]
+        senden({"typ": "fehler", "text": str(fehler)})
+        return
     except Exception:
         logging.exception("Unerwarteter Fehler in der Web-UI")
-        return anzeige + [gr.ChatMessage(role="assistant", content="❌ Unerwarteter Fehler – Details stehen in agent.log.")]
+        senden({"typ": "fehler", "text": "Unerwarteter Fehler – Details stehen in agent.log."})
+        return
 
-    anzeige.append(gr.ChatMessage(role="assistant", content=antwort))
-
+    senden({"typ": "antwort", "text": antwort})
     if neue_aktionen:
-        offene_aktionen = neue_aktionen
-        liste = "\n".join(f"- `{a['name']}({als_text(a['argumente'])})`" for a in neue_aktionen)
-        anzeige.append(gr.ChatMessage(
-            role="assistant",
-            content=f"Der Agent möchte Folgendes ausführen:\n{liste}\n\n"
-                    f"Antworte mit **ja**, um es auszuführen. Jede andere Antwort bricht ab.",
-            metadata={"title": "⚠️ Bestätigung nötig"},
-        ))
-    return anzeige
-
-
-def agent_info(kennung: str) -> str:
-    """Kurzer Infotext über dem Chat: Was kann der gewählte Agent?"""
-    try:
-        a = agent_laden(kennung)
-    except KonfigFehler as fehler:
-        return f"❌ {fehler}"
-    tools = ", ".join(f"`{t}`" for t in a["tools"]) or "(keine)"
-    return f"**{a['name']}** – {a['beschreibung']}  \nTools: {tools}"
-
-
-def agent_gewechselt(kennung: str):
-    """Beim Agent-Wechsel: Chat leeren und Infotext aktualisieren."""
-    global offene_aktionen
-    offene_aktionen = []
-    return agent_info(kennung), [], []
+        senden({"typ": "bestaetigung", "aktionen": neue_aktionen})
 
 
 # ---------------------------------------------------------------------------
-# Die Oberfläche zusammenbauen
+# Der Webserver (Technik – hier musst du nichts verstehen)
 # ---------------------------------------------------------------------------
 
-with gr.Blocks(title="Agent-Vorlage") as app:
-    gr.Markdown("# 🤖 Agent-Vorlage\nWähle einen Agent und chatte los. "
-                "Aufklappbare Kästen 🔧 zeigen, welche Tools der Agent benutzt hat.")
-    for datei, fehler in LADEFEHLER.items():
-        gr.Markdown(f"⚠️ **tools/{datei}** konnte nicht geladen werden: `{fehler}` "
-                    f"(Tipp: `python check_tools.py`)")
+class Anfragen(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path in ("/", "/index.html"):
+            self.antwort_senden(200, WEBSEITE.read_bytes(), "text/html; charset=utf-8")
+        elif self.path == "/api/agenten":
+            self.antwort_senden(200, json.dumps(agenten_infos(), ensure_ascii=False).encode(),
+                                "application/json; charset=utf-8")
+        else:
+            self.antwort_senden(404, b"Nicht gefunden", "text/plain")
 
-    kennungen = agenten_auflisten()
-    auswahl = gr.Dropdown(
-        choices=kennungen,
-        value=STANDARD_AGENT if STANDARD_AGENT in kennungen else kennungen[0],
-        label="Agent",
-    )
-    info = gr.Markdown(agent_info(auswahl.value))
+    def do_POST(self):
+        if self.path != "/api/chat":
+            self.antwort_senden(404, b"Nicht gefunden", "text/plain")
+            return
+        laenge = int(self.headers.get("Content-Length", 0))
+        anfrage = json.loads(self.rfile.read(laenge) or b"{}")
 
-    chat_fenster = gr.ChatInterface(
-        fn=chat,
-        additional_inputs=[auswahl],
-        chatbot=gr.Chatbot(height=500, label="Chat"),
-        textbox=gr.Textbox(placeholder="Schreib eine Nachricht …", submit_btn=True),
-    )
-    auswahl.change(agent_gewechselt, inputs=auswahl,
-                   outputs=[info, chat_fenster.chatbot, chat_fenster.chatbot_state])
+        # Antwort Stück für Stück schicken: eine JSON-Zeile pro Ereignis
+        self.send_response(200)
+        self.send_header("Content-Type", "application/x-ndjson; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+
+        def senden(ereignis: dict):
+            try:
+                self.wfile.write((json.dumps(ereignis, ensure_ascii=False) + "\n").encode())
+                self.wfile.flush()
+            except OSError:
+                pass  # Browser-Tab wurde geschlossen – egal
+
+        chat(anfrage, senden)
+        self.close_connection = True
+
+    def antwort_senden(self, status: int, inhalt: bytes, typ: str):
+        self.send_response(status)
+        self.send_header("Content-Type", typ)
+        self.send_header("Content-Length", str(len(inhalt)))
+        self.end_headers()
+        self.wfile.write(inhalt)
+
+    def log_message(self, *args):
+        pass  # keine Zeile pro Anfrage im Terminal anzeigen
+
+
+class Server(ThreadingHTTPServer):
+    # Unter Windows würde "reuse" erlauben, dass zwei Server denselben Port belegen
+    allow_reuse_address = os.name != "nt"
+    daemon_threads = True
+
+
+def server_starten(port: int = 7860, browser_oeffnen: bool = True) -> ThreadingHTTPServer:
+    tools_laden()
+    for versuch in range(20):  # ist der Port belegt, nehmen wir den nächsten
+        try:
+            server = Server(("127.0.0.1", port + versuch), Anfragen)
+            break
+        except OSError:
+            continue
+    else:
+        sys.exit("❌ Konnte keinen freien Port finden. Läuft web.py vielleicht schon?")
+
+    adresse = f"http://127.0.0.1:{server.server_address[1]}"
+    print(f"🌐 Web-UI läuft auf {adresse}")
+    print("   (Beenden mit Strg + C)")
+    for warnung in agenten_infos()["warnungen"]:
+        print(f"⚠️  {warnung}")
+    if browser_oeffnen:
+        threading.Timer(0.5, webbrowser.open, args=[adresse]).start()
+    return server
 
 
 if __name__ == "__main__":
-    app.launch(inbrowser=True)
+    server = server_starten()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nTschüss! 👋")

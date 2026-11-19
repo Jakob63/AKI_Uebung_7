@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent-Vorlage</title>
+<!--
+  Die Chat-Seite für web.py. Muss nicht verändert werden.
+  Kein externes Framework: nur HTML, CSS und etwas JavaScript.
+-->
+<style>
+  :root {
+    --bg: #f5f6f8; --flaeche: #ffffff; --text: #1d2330; --leise: #677085; --rand: #dde1e8;
+    --akzent: #3b5bdb; --akzent-text: #ffffff; --nutzer: #3b5bdb; --nutzer-text: #ffffff;
+    --tool: #f0f3ff; --tool-rand: #ccd5f6; --warn: #fff6e0; --warn-rand: #f0c96a;
+    --fehler: #fdecec; --fehler-rand: #eba5a5; --code: #eef0f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161b; --flaeche: #1d2027; --text: #e6e8ee; --leise: #9aa1b2; --rand: #2e323c;
+      --akzent: #7b93ff; --akzent-text: #0e1220; --nutzer: #3b4f9e; --nutzer-text: #ffffff;
+      --tool: #1f2536; --tool-rand: #34406a; --warn: #2e2814; --warn-rand: #7a6420;
+      --fehler: #351c1c; --fehler-rand: #7d3a3a; --code: #272b35;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header {
+    background: var(--flaeche); border-bottom: 1px solid var(--rand);
+    padding: 12px 16px;
+  }
+  .kopfzeile { max-width: 860px; margin: 0 auto; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  h1 { font-size: 18px; margin: 0; margin-right: auto; }
+  select, button, textarea { font: inherit; color: inherit; }
+  select {
+    background: var(--bg); border: 1px solid var(--rand); border-radius: 8px; padding: 6px 10px;
+  }
+  button {
+    border: 1px solid var(--rand); background: var(--flaeche); border-radius: 8px;
+    padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { border-color: var(--akzent); }
+  button.haupt { background: var(--akzent); color: var(--akzent-text); border-color: var(--akzent); }
+  button:disabled { opacity: .5; cursor: default; }
+  .info { max-width: 860px; margin: 8px auto 0; color: var(--leise); font-size: 13px; }
+  .chip {
+    display: inline-block; background: var(--tool); border: 1px solid var(--tool-rand);
+    border-radius: 999px; padding: 0 8px; margin: 2px 2px 0 0; font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+  }
+  main { flex: 1; overflow-y: auto; padding: 16px; }
+  #chat { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+  .leer { text-align: center; color: var(--leise); margin-top: 12vh; }
+  .leer b { color: var(--text); }
+  .blase {
+    max-width: 85%; padding: 10px 14px; border-radius: 14px; overflow-wrap: anywhere;
+    background: var(--flaeche); border: 1px solid var(--rand); align-self: flex-start;
+  }
+  .blase.nutzer { background: var(--nutzer); color: var(--nutzer-text); border-color: var(--nutzer); align-self: flex-end; white-space: pre-wrap; }
+  .blase p { margin: 0 0 8px; } .blase p:last-child { margin-bottom: 0; }
+  .blase ul, .blase ol { margin: 4px 0 8px; padding-left: 22px; }
+  .blase h3, .blase h4 { margin: 8px 0 4px; font-size: 15px; }
+  code { background: var(--code); border-radius: 4px; padding: 1px 4px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  pre { background: var(--code); border-radius: 8px; padding: 8px 10px; overflow-x: auto; margin: 6px 0; }
+  pre code { padding: 0; background: none; }
+  details.tool {
+    align-self: flex-start; max-width: 85%; background: var(--tool); border: 1px solid var(--tool-rand);
+    border-radius: 10px; padding: 6px 12px; font-size: 13px;
+  }
+  details.tool summary { cursor: pointer; }
+  details.tool pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .karte { align-self: flex-start; max-width: 85%; border-radius: 12px; padding: 10px 14px; }
+  .karte.warn { background: var(--warn); border: 1px solid var(--warn-rand); }
+  .karte.fehler { background: var(--fehler); border: 1px solid var(--fehler-rand); white-space: pre-wrap; }
+  .karte .knoepfe { margin-top: 8px; display: flex; gap: 8px; }
+  .denkt { color: var(--leise); font-size: 13px; align-self: flex-start; }
+  .denkt::after { content: ""; animation: punkte 1.2s infinite; }
+  @keyframes punkte { 0% { content: ""; } 33% { content: "."; } 66% { content: ".."; } 100% { content: "..."; } }
+  #warnungen .karte { max-width: 860px; margin: 8px auto 0; }
+  footer { background: var(--flaeche); border-top: 1px solid var(--rand); padding: 12px 16px; }
+  form { max-width: 860px; margin: 0 auto; display: flex; gap: 8px; }
+  textarea {
+    flex: 1; resize: none; min-height: 42px; max-height: 160px; padding: 9px 12px;
+    background: var(--bg); border: 1px solid var(--rand); border-radius: 10px;
+  }
+  textarea:focus, select:focus { outline: 2px solid var(--akzent); outline-offset: -1px; }
+  .hinweis { max-width: 860px; margin: 6px auto 0; color: var(--leise); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="kopfzeile">
+    <h1>🤖 Agent-Vorlage</h1>
+    <label for="agent" style="font-size:13px;color:var(--leise)">Agent:</label>
+    <select id="agent"></select>
+    <button id="neu" type="button" title="Gespräch vergessen und neu anfangen">Neues Gespräch</button>
+  </div>
+  <div class="info" id="info"></div>
+  <div id="warnungen"></div>
+</header>
+
+<main id="scrollbereich">
+  <div id="chat"></div>
+</main>
+
+<footer>
+  <form id="formular">
+    <textarea id="eingabe" rows="1" placeholder="Schreib eine Nachricht …" autofocus></textarea>
+    <button class="haupt" id="senden" type="submit">Senden</button>
+  </form>
+  <div class="hinweis">Enter = senden · Umschalt + Enter = neue Zeile · Die Kästen 🔧 zeigen, welche Tools der Agent benutzt hat (zum Aufklappen anklicken).</div>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let agenten = [];
+let verlauf = [];          // bisheriges Gespräch: [{role: "user"/"assistant", content: "..."}]
+let offeneAktionen = [];   // Aktionen, die auf "ja" warten
+let beschaeftigt = false;
+
+// ---------- Hilfsfunktionen ----------
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (z) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[z]));
+}
+
+// Sehr kleiner Markdown-Übersetzer (fett, kursiv, Code, Listen, Überschriften, Links)
+function markdown(text) {
+  const bloecke = [];
+  text = escapeHtml(text).replace(/```[a-zA-Z]*\n?([\s\S]*?)```/g, (_, code) => {
+    bloecke.push("<pre><code>" + code.replace(/\n$/, "") + "</code></pre>");
+    return "\u0000" + (bloecke.length - 1) + "\u0000";
+  });
+  const inline = (s) => s
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  let html = "", liste = null;
+  const listeZu = () => { if (liste) { html += `</${liste}>`; liste = null; } };
+  for (const zeile of text.split("\n")) {
+    let m;
+    if ((m = zeile.match(/^\u0000(\d+)\u0000$/))) { listeZu(); html += bloecke[+m[1]]; }
+    else if ((m = zeile.match(/^\s*[-*•]\s+(.*)/))) { if (liste !== "ul") { listeZu(); html += "<ul>"; liste = "ul"; } html += `<li>${inline(m[1])}</li>`; }
+    else if ((m = zeile.match(/^\s*\d+[.)]\s+(.*)/))) { if (liste !== "ol") { listeZu(); html += "<ol>"; liste = "ol"; } html += `<li>${inline(m[1])}</li>`; }
+    else if ((m = zeile.match(/^#{1,6}\s+(.*)/))) { listeZu(); html += `<h4>${inline(m[1])}</h4>`; }
+    else if (zeile.trim() === "") { listeZu(); }
+    else { listeZu(); html += `<p>${inline(zeile)}</p>`; }
+  }
+  listeZu();
+  return html.replace(/\u0000(\d+)\u0000/g, (_, i) => bloecke[+i]);
+}
+
+function hinzufuegen(element) {
+  const leer = $("chat").querySelector(".leer");
+  if (leer) leer.remove();
+  $("chat").appendChild(element);
+  $("scrollbereich").scrollTop = $("scrollbereich").scrollHeight;
+  return element;
+}
+
+function element(tag, klasse, html) {
+  const e = document.createElement(tag);
+  if (klasse) e.className = klasse;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+
+function argumenteText(argumente) {
+  return Object.entries(argumente || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ");
+}
+
+function ergebnisHuebsch(ergebnis) {
+  try { return JSON.stringify(JSON.parse(ergebnis), null, 2); } catch { return ergebnis; }
+}
+
+// ---------- Anzeige ----------
+function leerAnzeigen() {
+  const a = aktuellerAgent();
+  $("chat").innerHTML = "";
+  $("chat").appendChild(element("div", "leer",
+    `<b>${escapeHtml(a ? a.name : "")}</b><br>Schreib unten eine Nachricht, um loszulegen.`));
+}
+
+function infoAnzeigen() {
+  const a = aktuellerAgent();
+  if (!a) return;
+  if (a.fehler) { $("info").innerHTML = "❌ " + escapeHtml(a.fehler); return; }
+  const tools = a.tools.length ? a.tools.map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("") : "(keine)";
+  $("info").innerHTML = `${escapeHtml(a.beschreibung || "")} &nbsp;·&nbsp; Tools: ${tools}`;
+}
+
+function toolAnzeigen(e) {
+  const kasten = element("details", "tool");
+  kasten.innerHTML =
+    `<summary>🔧 Tool benutzt: <code>${escapeHtml(e.name)}(${escapeHtml(argumenteText(e.argumente))})</code></summary>` +
+    `<div style="margin-top:6px">Ergebnis:</div><pre>${escapeHtml(ergebnisHuebsch(e.ergebnis))}</pre>`;
+  return kasten;
+}
+
+function bestaetigungAnzeigen(aktionen) {
+  const liste = aktionen.map((a) => `<li><code>${escapeHtml(a.name)}(${escapeHtml(argumenteText(a.argumente))})</code></li>`).join("");
+  const karte = element("div", "karte warn",
+    `⚠️ <b>Bestätigung nötig.</b> Der Agent möchte Folgendes ausführen:<ul>${liste}</ul>` +
+    `Antworte mit <b>ja</b> oder klicke auf den Knopf.`);
+  const knoepfe = element("div", "knoepfe");
+  const ja = element("button", "haupt", "Ja, ausführen");
+  const nein = element("button", "", "Nein");
+  ja.onclick = () => senden("ja");
+  nein.onclick = () => senden("nein");
+  knoepfe.append(ja, nein);
+  karte.appendChild(knoepfe);
+  return karte;
+}
+
+// ---------- Nachricht senden ----------
+async function senden(text) {
+  text = text.trim();
+  if (!text || beschaeftigt) return;
+  beschaeftigt = true;
+  $("senden").disabled = true;
+  document.querySelectorAll(".karte.warn button").forEach((b) => (b.disabled = true));
+
+  hinzufuegen(element("div", "blase nutzer")).textContent = text;
+  const denkt = hinzufuegen(element("div", "denkt", "Agent denkt nach"));
+  const anfrage = { agent: $("agent").value, nachricht: text, verlauf, offene_aktionen: offeneAktionen };
+  offeneAktionen = [];
+  let antwort = null;
+
+  try {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(anfrage) });
+    const leser = r.body.getReader();
+    const decoder = new TextDecoder();
+    let puffer = "";
+    while (true) {
+      const { value, done } = await leser.read();
+      if (done) break;
+      puffer += decoder.decode(value, { stream: true });
+      let zeilenende;
+      while ((zeilenende = puffer.indexOf("\n")) >= 0) {
+        const zeile = puffer.slice(0, zeilenende).trim();
+        puffer = puffer.slice(zeilenende + 1);
+        if (!zeile) continue;
+        const e = JSON.parse(zeile);
+        let neu = null;
+        if (e.typ === "tool") neu = toolAnzeigen(e);
+        else if (e.typ === "antwort") { antwort = e.text; neu = element("div", "blase", markdown(e.text)); }
+        else if (e.typ === "bestaetigung") { offeneAktionen = e.aktionen; neu = bestaetigungAnzeigen(e.aktionen); }
+        else if (e.typ === "fehler") { neu = element("div", "karte fehler"); neu.textContent = "❌ " + e.text; }
+        if (neu) { $("chat").insertBefore(neu, denkt); $("scrollbereich").scrollTop = $("scrollbereich").scrollHeight; }
+      }
+    }
+  } catch (fehler) {
+    const f = element("div", "karte fehler");
+    f.textContent = "❌ Keine Verbindung zum Server. Läuft web.py noch im Terminal?";
+    $("chat").insertBefore(f, denkt);
+  }
+
+  denkt.remove();
+  if (antwort !== null) {
+    verlauf.push({ role: "user", content: text }, { role: "assistant", content: antwort });
+  }
+  beschaeftigt = false;
+  $("senden").disabled = false;
+  $("eingabe").focus();
+}
+
+function aktuellerAgent() {
+  return agenten.find((a) => a.kennung === $("agent").value);
+}
+
+function neuesGespraech() {
+  verlauf = [];
+  offeneAktionen = [];
+  leerAnzeigen();
+  $("eingabe").focus();
+}
+
+// ---------- Start ----------
+$("formular").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const text = $("eingabe").value;
+  $("eingabe").value = "";
+  $("eingabe").style.height = "";
+  senden(text);
+});
+$("eingabe").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); $("formular").requestSubmit(); }
+});
+$("eingabe").addEventListener("input", () => {
+  const t = $("eingabe"); t.style.height = ""; t.style.height = Math.min(t.scrollHeight, 160) + "px";
+});
+$("neu").addEventListener("click", neuesGespraech);
+$("agent").addEventListener("change", () => {
+  try { localStorage.setItem("agent", $("agent").value); } catch {}
+  infoAnzeigen();
+  neuesGespraech();
+});
+
+fetch("/api/agenten").then((r) => r.json()).then((daten) => {
+  agenten = daten.agenten;
+  let gemerkt = null;
+  try { gemerkt = localStorage.getItem("agent"); } catch {}
+  for (const a of agenten) {
+    const o = document.createElement("option");
+    o.value = a.kennung; o.textContent = a.name + (a.fehler ? " (fehlerhaft)" : "");
+    $("agent").appendChild(o);
+  }
+  const start = [gemerkt, daten.standard].find((k) => agenten.some((a) => a.kennung === k));
+  if (start) $("agent").value = start;
+  for (const w of daten.warnungen) {
+    const k = element("div", "karte warn");
+    k.textContent = "⚠️ " + w + " (Tipp: python check_tools.py)";
+    $("warnungen").appendChild(k);
+  }
+  infoAnzeigen();
+  leerAnzeigen();
+}).catch(() => {
+  $("chat").innerHTML = '<div class="karte fehler">❌ Konnte die Agents nicht laden. Läuft web.py?</div>';
+});
+</script>
+</body>
+</html>

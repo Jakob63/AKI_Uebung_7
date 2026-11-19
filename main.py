@@ -18,6 +18,9 @@ import os
 import sys
 from pathlib import Path
 
+if sys.version_info < (3, 10):
+    sys.exit("❌ Du brauchst Python 3.10 oder neuer. Installiere eine neuere Version von python.org.")
+
 # Immer im Projektordner arbeiten, egal von wo aus das Programm gestartet wurde
 os.chdir(Path(__file__).parent)
 sys.stdout.reconfigure(encoding="utf-8")  # damit Umlaute unter Windows richtig angezeigt werden
